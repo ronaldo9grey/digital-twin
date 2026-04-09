@@ -107,6 +107,63 @@ const energyStation: FactoryTemplate = {
   ],
 };
 
+/** 火力发电厂模板 */
+const thermalPowerPlant: FactoryTemplate = {
+  id: 'thermal-power-plant',
+  name: '火力发电厂',
+  description: '包含锅炉、汽轮机、发电机、冷却塔等核心设备的火电厂完整布局',
+  icon: 'ControlOutlined',
+  floorSize: { width: 50, depth: 40 },
+  floorColor: '#d4d4d4',
+  wallColor: '#b0b0b0',
+  environment: {
+    ambientLight: { intensity: 0.45, color: '#fff5eb' },
+    directionalLight: { intensity: 0.85, color: '#fff5eb', position: { x: 15, y: 20, z: 10 } },
+    fog: { color: '#d4c4a8', near: 25, far: 70 },
+    skyColor: '#fef3e2',
+    groundColor: '#d4c4a8',
+  },
+  devices: [
+    // ---- 锅炉区域（中心偏后）----
+    { templateId: 'cnc-machine', name: '1#锅炉', position: { x: -3, y: 0, z: -10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'cnc-machine', name: '2#锅炉', position: { x: 3, y: 0, z: -10 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 汽轮机区域（锅炉前方）----
+    { templateId: 'air-compressor', name: '1#汽轮机', position: { x: -3, y: 0, z: -3 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'air-compressor', name: '2#汽轮机', position: { x: 3, y: 0, z: -3 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 发电机区域（汽轮机前方）----
+    { templateId: 'power-cabinet', name: '1#发电机', position: { x: -3, y: 0, z: 4 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'power-cabinet', name: '2#发电机', position: { x: 3, y: 0, z: 4 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 冷却塔区域（右侧）----
+    { templateId: 'chiller', name: '1#冷却塔', position: { x: 15, y: 0, z: -5 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'chiller', name: '2#冷却塔', position: { x: 15, y: 0, z: 5 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 输煤皮带（左侧）----
+    { templateId: 'conveyor-belt', name: '输煤皮带-1', position: { x: -18, y: 0, z: -8 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+    { templateId: 'conveyor-belt', name: '输煤皮带-2', position: { x: -18, y: 0, z: -4 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+    { templateId: 'conveyor-belt', name: '输煤皮带-3', position: { x: -18, y: 0, z: 0 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+
+    // ---- 配电区域（左前方）----
+    { templateId: 'power-cabinet', name: '主配电柜', position: { x: -12, y: 0, z: 10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'power-cabinet', name: '备用配电柜', position: { x: -10.5, y: 0, z: 10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'vfd', name: '变压器-1', position: { x: -14, y: 0, z: 10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'vfd', name: '变压器-2', position: { x: -14, y: 0, z: 8 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 温度传感器（分布在关键位置）----
+    { templateId: 'temp-sensor', name: '锅炉温度监测-1', position: { x: -5, y: 0, z: -10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'temp-sensor', name: '汽轮机温度监测', position: { x: 0, y: 0, z: -3 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 压力传感器（分布在关键位置）----
+    { templateId: 'pressure-sensor', name: '主蒸汽压力监测', position: { x: 5, y: 0, z: -10 }, rotation: { x: 0, y: 0, z: 0 } },
+    { templateId: 'pressure-sensor', name: '凝汽器压力监测', position: { x: 5, y: 0, z: 4 }, rotation: { x: 0, y: 0, z: 0 } },
+
+    // ---- 流量计 ----
+    { templateId: 'flow-meter', name: '冷却水流量计', position: { x: 12, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } },
+  ],
+};
+
 // ==================== 导出 ====================
 
 /** 所有工厂模板 */
@@ -114,6 +171,7 @@ export const factoryTemplates: FactoryTemplate[] = [
   smartFactory,
   simpleWorkshop,
   energyStation,
+  thermalPowerPlant,
 ];
 
 /** 根据ID获取工厂模板 */

@@ -100,6 +100,8 @@ export interface GeometryPart {
   position: Vector3D;
   rotation: Rotation3D;
   color: string;
+  metalness?: number;
+  roughness?: number;
 }
 
 /** 场景中的设备实例 */

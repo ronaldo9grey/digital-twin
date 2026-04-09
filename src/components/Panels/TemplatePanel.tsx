@@ -1,7 +1,7 @@
 // ==========================================
 // 数字孪生系统 - 模板选择面板
 // ==========================================
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Card, Tabs, Tag, Empty, Typography } from 'antd';
 import {
   HomeOutlined,
@@ -111,15 +111,42 @@ function FactoryTemplateCard({ template }: { template: FactoryTemplate }) {
 /** 设备模板卡片 */
 function DeviceTemplateCard({ template }: { template: DeviceTemplate }) {
   const addDevice = useAppStore((s) => s.addDevice);
+  const devices = useAppStore((s) => s.devices);
+
+  /** 添加设备，基于已有设备数量计算随机偏移，避免重叠 */
+  const handleAddDevice = useCallback(() => {
+    // 统计同模板设备的数量，计算偏移
+    const sameTemplateCount = devices.filter((d) => d.templateId === template.id).length;
+    const offsetX = (sameTemplateCount % 3) * 3 - 3; // 沿X轴排列，每行3个
+    const offsetZ = Math.floor(sameTemplateCount / 3) * 3; // 超过3个换行
+    const position = {
+      x: (template.defaultPosition?.x || 0) + offsetX,
+      y: 0,
+      z: (template.defaultPosition?.z || 0) + offsetZ,
+    };
+    addDevice(template.id, position);
+  }, [addDevice, devices, template]);
+
+  /** 阻止事件冒泡，防止触发Card的onClick */
+  const handleActionsClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleAddDevice();
+  }, [handleAddDevice]);
+
+  /** Card的onClick也阻止冒泡并添加设备 */
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleAddDevice();
+  }, [handleAddDevice]);
 
   return (
     <Card
       hoverable
       size="small"
       style={{ marginBottom: 8, border: '1px solid #e2e8f0' }}
-      onClick={() => addDevice(template.id)}
+      onClick={handleCardClick}
       actions={[
-        <PlusOutlined key="add" title="添加到场景" />,
+        <PlusOutlined key="add" title="添加到场景" onClick={handleActionsClick} />,
       ]}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

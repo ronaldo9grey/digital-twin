@@ -1,8 +1,8 @@
 // ==========================================
 // 数字孪生系统 - 3D场景主组件
 // ==========================================
-import { useRef, useMemo, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef, useMemo, useCallback, useState } from 'react';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../../store';
@@ -35,18 +35,31 @@ function GeometryPartMesh({ part, statusColor }: { part: GeometryPart; statusCol
       geometry={geometry}
       position={[part.position.x, part.position.y, part.position.z]}
       rotation={[part.rotation.x, part.rotation.y, part.rotation.z]}
+      castShadow
+      receiveShadow
     >
-      <meshStandardMaterial color={isIndicator ? statusColor : part.color} />
+      <meshStandardMaterial
+        color={isIndicator ? statusColor : part.color}
+        metalness={part.metalness ?? 0.3}
+        roughness={part.roughness ?? 0.6}
+      />
     </mesh>
   );
 }
 
-/** 渲染单个设备 */
+/** 渲染单个设备（支持拖拽） */
 function DeviceMesh({ device }: { device: DeviceInstance }) {
   const template = getDeviceTemplate(device.templateId);
   const selectDevice = useAppStore((s) => s.selectDevice);
   const selectedDeviceId = useAppStore((s) => s.selectedDeviceId);
+  const updateDevicePosition = useAppStore((s) => s.updateDevicePosition);
   const meshRef = useRef<THREE.Group>(null);
+  const isDragging = useRef(false);
+  const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const intersection = useMemo(() => new THREE.Vector3(), []);
+  const offset = useMemo(() => new THREE.Vector3(), []);
+  const { raycaster, gl } = useThree();
+  const [, setHovered] = useState(false);
 
   if (!template) return null;
 
@@ -54,20 +67,57 @@ function DeviceMesh({ device }: { device: DeviceInstance }) {
   const statusColor = template.statusColors[device.status] || '#a0aec0';
   const maxY = template.geometry.parts ? Math.max(...template.geometry.parts.map(p => p.position.y + (p.params.height || 0))) : 1.5;
 
-  // 设备动画（运行状态时轻微浮动）
+  // 设备动画（运行状态时轻微浮动，拖拽时不浮动）
   useFrame((state) => {
-    if (meshRef.current && device.status === DeviceStatus.RUNNING) {
+    if (meshRef.current && device.status === DeviceStatus.RUNNING && !isDragging.current) {
       meshRef.current.position.y = device.position.y + Math.sin(state.clock.elapsedTime * 2) * 0.02;
     }
   });
 
-  const handleClick = useCallback(
-    (e: { stopPropagation: () => void }) => {
+  /** 鼠标按下：选中设备，准备拖拽 */
+  const handlePointerDown = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
       selectDevice(device.id);
+
+      // 如果设备已被选中，开始拖拽
+      if (selectedDeviceId === device.id) {
+        isDragging.current = true;
+        raycaster.ray.intersectPlane(plane, intersection);
+        offset.copy(intersection).sub(new THREE.Vector3(device.position.x, 0, device.position.z));
+        gl.domElement.style.cursor = 'grabbing';
+      }
     },
-    [device.id, selectDevice]
+    [device.id, device.position, selectedDeviceId, selectDevice, raycaster, plane, intersection, offset, gl]
   );
+
+  /** 鼠标移动：拖拽设备在地面上移动 */
+  const handlePointerMove = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      if (!isDragging.current || !meshRef.current) return;
+
+      e.stopPropagation();
+      raycaster.ray.intersectPlane(plane, intersection);
+      const targetX = intersection.x - offset.x;
+      const targetZ = intersection.z - offset.z;
+      meshRef.current.position.x = targetX;
+      meshRef.current.position.z = targetZ;
+    },
+    [raycaster, plane, intersection, offset]
+  );
+
+  /** 鼠标抬起：结束拖拽，更新store */
+  const handlePointerUp = useCallback(() => {
+    if (isDragging.current && meshRef.current) {
+      isDragging.current = false;
+      gl.domElement.style.cursor = '';
+      updateDevicePosition(device.id, {
+        x: meshRef.current.position.x,
+        y: device.position.y,
+        z: meshRef.current.position.z,
+      });
+    }
+  }, [device.id, device.position.y, updateDevicePosition, gl]);
 
   return (
     <group
@@ -75,7 +125,11 @@ function DeviceMesh({ device }: { device: DeviceInstance }) {
       position={[device.position.x, device.position.y, device.position.z]}
       rotation={[device.rotation.x, device.rotation.y, device.rotation.z]}
       scale={[device.scale.x, device.scale.y, device.scale.z]}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerOver={() => { setHovered(true); gl.domElement.style.cursor = isSelected ? 'grab' : 'pointer'; }}
+      onPointerOut={() => { setHovered(false); if (!isDragging.current) gl.domElement.style.cursor = ''; }}
     >
       {/* 渲染设备几何体 */}
       {template.geometry.parts?.map((part) => (
@@ -151,7 +205,7 @@ function FactoryFloor() {
         sectionSize={5}
         sectionThickness={1}
         sectionColor="#a0aec0"
-        fadeDistance={30}
+        fadeDistance={50}
         fadeStrength={1}
         followCamera={false}
         position={[0, 0.01, 0]}
@@ -229,7 +283,7 @@ function SceneContent() {
         enableDamping
         dampingFactor={0.1}
         minDistance={5}
-        maxDistance={60}
+        maxDistance={80}
         maxPolarAngle={Math.PI / 2.1}
       />
     </>
@@ -245,7 +299,7 @@ export default function TwinScene() {
   return (
     <div style={{ width: '100%', height: '100%', background: '#1a202c' }}>
       <Canvas
-        camera={{ position: [15, 12, 15], fov: 50, near: 0.1, far: 200 }}
+        camera={{ position: [15, 12, 15], fov: 50, near: 0.1, far: 300 }}
         shadows
         gl={{ antialias: true, alpha: false }}
       >
@@ -253,7 +307,7 @@ export default function TwinScene() {
         <SceneContent />
       </Canvas>
 
-      {/* 空场景提示 - 基于设备数量判断 */}
+      {/* 空场景提示 */}
       {!hasContent && (
         <div
           style={{
