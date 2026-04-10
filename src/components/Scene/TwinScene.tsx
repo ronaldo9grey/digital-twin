@@ -23,6 +23,7 @@ import {
   GreenArea,
 } from './FactoryBuildings';
 import FactoryEnvironment from './FactoryEnvironment';
+import FactoryInterior from './FactoryInterior';
 
 // ==================== 设备3D渲染组件 ====================
 
@@ -189,10 +190,92 @@ function DeviceMesh({ device }: { device: DeviceInstance }) {
   );
 }
 
+// ==================== 相机距离检测 ====================
+
+/** 检测相机是否在指定区域内的 hook */
+function useCameraProximity(center: [number, number, number], radius: number): boolean {
+  const { camera } = useThree();
+  const [isInside, setIsInside] = useState(false);
+  const centerVec = useMemo(() => new THREE.Vector3(...center), [center]);
+
+  useFrame(() => {
+    const dist = camera.position.distanceTo(centerVec);
+    setIsInside(dist < radius);
+  });
+
+  return isInside;
+}
+
+// ==================== X光透视厂房组件 ====================
+
+/** XRayFactoryHall - 包裹 FactoryHall，根据相机距离控制墙壁和屋顶透明度 */
+function XRayFactoryHall({
+  position = [0, 0, 0],
+  width = 20,
+  depth = 12,
+  isInside,
+}: {
+  position?: [number, number, number];
+  width?: number;
+  depth?: number;
+  isInside: boolean;
+}) {
+  // 当前透明度（使用 ref 避免每帧触发重渲染）
+  const wallOpacityRef = useRef(0.85);
+  const roofOpacityRef = useRef(0.85);
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    // 目标透明度：内部模式 vs 外部模式
+    const targetWall = isInside ? 0.1 : 0.85;
+    const targetRoof = isInside ? 0.05 : 0.85;
+
+    // 使用 lerp 插值平滑过渡
+    wallOpacityRef.current += (targetWall - wallOpacityRef.current) * 0.05;
+    roofOpacityRef.current += (targetRoof - roofOpacityRef.current) * 0.05;
+
+    // 遍历子 mesh，更新材质透明度
+    if (groupRef.current) {
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const mat = child.material;
+          if (mat instanceof THREE.MeshStandardMaterial) {
+            // 根据颜色判断是墙壁还是屋顶
+            if (mat.color.getHexString() === 'e8e8e8') {
+              // 墙壁材质
+              mat.transparent = true;
+              mat.opacity = wallOpacityRef.current;
+              mat.needsUpdate = true;
+            } else if (mat.color.getHexString() === '4a6fa5') {
+              // 屋顶材质（蓝色）
+              mat.transparent = true;
+              mat.opacity = roofOpacityRef.current;
+              mat.needsUpdate = true;
+            }
+          }
+        }
+      });
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <FactoryHall position={position} width={width} depth={depth} />
+    </group>
+  );
+}
+
 // ==================== 工厂地面和墙壁 ====================
 
 /** 火力发电厂精细场景布局 */
 function ThermalPowerPlantScene() {
+  // 检测相机是否在主厂房和锅炉房附近
+  const isMainHallInside = useCameraProximity([0, 0, 0], 15);
+  const isBoilerHallInside = useCameraProximity([0, 0, -12], 12);
+
+  // 任意一个厂房进入内部模式
+  const isInside = isMainHallInside || isBoilerHallInside;
+
   return (
     <>
       {/* 精细环境渲染（天空、草地、光照、雾效） */}
@@ -201,11 +284,17 @@ function ThermalPowerPlantScene() {
       {/* 办公楼 - 面向场景内部 */}
       <OfficeBuilding position={[0, 0, 15]} rotation={[0, Math.PI, 0]} />
 
-      {/* 主厂房（汽轮机） - 场景中心 */}
-      <FactoryHall position={[0, 0, 0]} width={20} depth={12} />
+      {/* 主厂房（汽轮机）- 场景中心 - 支持X光透视 */}
+      <XRayFactoryHall position={[0, 0, 0]} width={20} depth={12} isInside={isMainHallInside} />
 
-      {/* 锅炉房 - 中后方 */}
-      <FactoryHall position={[0, 0, -12]} width={16} depth={10} />
+      {/* 主厂房内部场景 */}
+      <FactoryInterior position={[0, 0, 0]} width={20} depth={12} visible={isMainHallInside} />
+
+      {/* 锅炉房 - 中后方 - 支持X光透视 */}
+      <XRayFactoryHall position={[0, 0, -12]} width={16} depth={10} isInside={isBoilerHallInside} />
+
+      {/* 锅炉房内部场景 */}
+      <FactoryInterior position={[0, 0, -12]} width={16} depth={10} visible={isBoilerHallInside} />
 
       {/* 烟囱 x2 - 后方 */}
       <Chimney position={[-4, 0, -18]} />
@@ -243,6 +332,33 @@ function ThermalPowerPlantScene() {
       <GreenArea position={[-20, 0.01, 0]} />
       <GreenArea position={[20, 0.01, 15]} />
       <GreenArea position={[-20, 0.01, -10]} />
+
+      {/* 视图模式提示标签 */}
+      <Html
+        position={[0, 12, 0]}
+        center
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          style={{
+            background: isInside ? 'rgba(66, 153, 225, 0.9)' : 'rgba(0, 0, 0, 0.75)',
+            color: '#fff',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            letterSpacing: '1px',
+            transition: 'background 0.5s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          {isInside ? '[ 内部视图 ] 滚轮拉远返回外部' : '[ 外部视图 ] 滚轮拉近进入厂房'}
+        </div>
+      </Html>
     </>
   );
 }

@@ -175,6 +175,8 @@ interface FactoryHallProps extends BaseProps {
   width?: number;
   depth?: number;
   height?: number;
+  wallOpacity?: number;  // 墙壁透明度（0-1），默认0.85
+  roofOpacity?: number;  // 屋顶透明度（0-1），默认0.85
 }
 
 export function FactoryHall({
@@ -184,6 +186,8 @@ export function FactoryHall({
   width = 20,
   depth = 12,
   height = 8,
+  wallOpacity = 0.85,
+  roofOpacity = 0.85,
 }: FactoryHallProps) {
   const wallThickness = 0.3;
   const roofOverhang = 0.8;
@@ -221,31 +225,31 @@ export function FactoryHall({
       {/* 前墙 */}
       <mesh position={[0, height / 2, depth / 2]} castShadow receiveShadow>
         <boxGeometry args={[width, height, wallThickness]} />
-        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} transparent opacity={wallOpacity} />
       </mesh>
 
       {/* 后墙 */}
       <mesh position={[0, height / 2, -depth / 2]} castShadow receiveShadow>
         <boxGeometry args={[width, height, wallThickness]} />
-        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} transparent opacity={wallOpacity} />
       </mesh>
 
       {/* 左墙 */}
       <mesh position={[-width / 2, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[wallThickness, height, depth]} />
-        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} transparent opacity={wallOpacity} />
       </mesh>
 
       {/* 右墙 */}
       <mesh position={[width / 2, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[wallThickness, height, depth]} />
-        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} />
+        <meshStandardMaterial color="#e8e8e8" metalness={0.1} roughness={0.8} transparent opacity={wallOpacity} />
       </mesh>
 
       {/* 主屋顶（坡屋顶 - 使用楔形效果） */}
       <mesh position={[0, height + 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[width + roofOverhang * 2, 0.3, depth + roofOverhang * 2]} />
-        <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} />
+        <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} transparent opacity={roofOpacity} />
       </mesh>
 
       {/* 屋顶坡度 - 左侧 */}
@@ -256,7 +260,7 @@ export function FactoryHall({
         receiveShadow
       >
         <boxGeometry args={[width + roofOverhang * 2, 0.3, depth + roofOverhang * 2]} />
-        <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} />
+        <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} transparent opacity={roofOpacity} />
       </mesh>
 
       {/* 锯齿形天窗 */}
@@ -269,7 +273,7 @@ export function FactoryHall({
       {/* 锯齿形天窗不透明面 */}
       {sawtoothGeometries.map((geo, i) => (
         <mesh key={`saw-opaque-${i}`} geometry={geo} castShadow receiveShadow>
-          <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} side={THREE.BackSide} />
+          <meshStandardMaterial color="#4a6fa5" metalness={0.3} roughness={0.6} side={THREE.BackSide} transparent opacity={roofOpacity} />
         </mesh>
       ))}
 
