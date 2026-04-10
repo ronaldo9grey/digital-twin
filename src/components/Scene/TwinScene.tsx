@@ -21,6 +21,13 @@ import {
   PowerLine,
   Road,
   GreenArea,
+  CoalYard,
+  DesulfurizationTower,
+  ElectrostaticPrecipitator,
+  TransformerStation,
+  CoalConveyorBelt,
+  WaterTreatment,
+  AshSilo,
 } from './FactoryBuildings';
 import FactoryEnvironment from './FactoryEnvironment';
 import FactoryInterior from './FactoryInterior';
@@ -267,11 +274,11 @@ function XRayFactoryHall({
 
 // ==================== 工厂地面和墙壁 ====================
 
-/** 火力发电厂精细场景布局 */
+/** 火力发电厂精细场景布局（80x60） */
 function ThermalPowerPlantScene() {
   // 检测相机是否在主厂房和锅炉房附近
-  const isMainHallInside = useCameraProximity([0, 0, 0], 15);
-  const isBoilerHallInside = useCameraProximity([0, 0, -12], 12);
+  const isMainHallInside = useCameraProximity([0, 0, 0], 18);
+  const isBoilerHallInside = useCameraProximity([0, 0, -12], 15);
 
   // 任意一个厂房进入内部模式
   const isInside = isMainHallInside || isBoilerHallInside;
@@ -279,63 +286,101 @@ function ThermalPowerPlantScene() {
   return (
     <>
       {/* 精细环境渲染（天空、草地、光照、雾效） */}
-      <FactoryEnvironment floorSize={{ width: 50, depth: 40 }} />
+      <FactoryEnvironment floorSize={{ width: 80, depth: 60 }} />
 
-      {/* 办公楼 - 面向场景内部 */}
-      <OfficeBuilding position={[0, 0, 15]} rotation={[0, Math.PI, 0]} />
+      {/* ===== 主厂房区 ===== */}
+      {/* 锅炉房 - 中后方 */}
+      <XRayFactoryHall position={[0, 0, -12]} width={20} depth={12} isInside={isBoilerHallInside} />
+      <FactoryInterior position={[0, 0, -12]} width={20} depth={12} visible={isBoilerHallInside} />
 
-      {/* 主厂房（汽轮机）- 场景中心 - 支持X光透视 */}
-      <XRayFactoryHall position={[0, 0, 0]} width={20} depth={12} isInside={isMainHallInside} />
+      {/* 汽机房 - 中心 */}
+      <XRayFactoryHall position={[0, 0, 0]} width={22} depth={14} isInside={isMainHallInside} />
+      <FactoryInterior position={[0, 0, 0]} width={22} depth={14} visible={isMainHallInside} />
 
-      {/* 主厂房内部场景 */}
-      <FactoryInterior position={[0, 0, 0]} width={20} depth={12} visible={isMainHallInside} />
+      {/* 除氧间 - 汽机房后方连接 */}
+      <FactoryHall position={[0, 0, 8]} width={10} depth={5} height={6} />
 
-      {/* 锅炉房 - 中后方 - 支持X光透视 */}
-      <XRayFactoryHall position={[0, 0, -12]} width={16} depth={10} isInside={isBoilerHallInside} />
+      {/* ===== 烟囱区 ===== */}
+      <Chimney position={[8, 0, -22]} />
+      <Chimney position={[12, 0, -22]} />
 
-      {/* 锅炉房内部场景 */}
-      <FactoryInterior position={[0, 0, -12]} width={16} depth={10} visible={isBoilerHallInside} />
+      {/* 除尘器 x2 */}
+      <ElectrostaticPrecipitator position={[12, 0, -15]} />
+      <ElectrostaticPrecipitator position={[16, 0, -15]} />
 
-      {/* 烟囱 x2 - 后方 */}
-      <Chimney position={[-4, 0, -18]} />
-      <Chimney position={[4, 0, -18]} />
+      {/* 脱硫塔 */}
+      <DesulfurizationTower position={[15, 0, -10]} />
 
-      {/* 冷却塔 x2 - 右侧 */}
-      <CoolingTower position={[12, 0, -5]} />
-      <CoolingTower position={[12, 0, -12]} />
+      {/* ===== 冷却设施区 ===== */}
+      <CoolingTower position={[18, 0, 0]} />
+      <CoolingTower position={[18, 0, -8]} />
 
-      {/* 储罐 x2 - 右中 */}
-      <StorageTank position={[16, 0, 5]} />
-      <StorageTank position={[16, 0, 10]} />
+      {/* ===== 燃料设施区 ===== */}
+      {/* 煤场 */}
+      <CoalYard position={[-25, 0, -20]} width={20} depth={15} />
 
-      {/* 球形储罐 - 右侧偏后 */}
-      <SphereTank position={[18, 0, -3]} />
+      {/* 输煤栈桥 - 煤场到锅炉房 */}
+      <CoalConveyorBelt position={[-15, 0, -18]} rotation={[0, 0, 0]} length={12} height={6} />
+      <CoalConveyorBelt position={[-8, 0, -15]} rotation={[0, -Math.PI/6, 0]} length={10} height={7} />
 
-      {/* 管道段 - 连接锅炉到汽轮机 */}
-      <PipeSegment position={[-3, 0, -7]} rotation={[Math.PI / 2, 0, 0]} length={5} />
-      <PipeSegment position={[3, 0, -7]} rotation={[Math.PI / 2, 0, 0]} length={5} />
+      {/* ===== 配电设施区 ===== */}
+      {/* 升压站 */}
+      <TransformerStation position={[15, 0, 15]} count={4} />
 
-      {/* 管道段 - 连接汽轮机到冷却塔 */}
-      <PipeSegment position={[8, 0, -3]} rotation={[0, 0, Math.PI / 2]} length={6} bent />
-      <PipeSegment position={[8, 0, -9]} rotation={[0, 0, Math.PI / 2]} length={6} bent />
+      {/* 输电塔 */}
+      <PowerLine position={[25, 0, 15]} />
+      <PowerLine position={[30, 0, 10]} />
 
-      {/* 输电塔 - 左后方 */}
-      <PowerLine position={[-15, 0, -10]} />
+      {/* ===== 水处理设施 ===== */}
+      <WaterTreatment position={[-20, 0, 15]} />
 
-      {/* 道路 - 纵向贯穿场景 */}
-      <Road position={[0, 0.02, 18]} rotation={[0, 0, 0]} width={6} length={40} />
+      {/* 储罐 */}
+      <StorageTank position={[-15, 0, 10]} />
+      <StorageTank position={[-15, 0, 5]} />
+      <SphereTank position={[-18, 0, 0]} />
 
-      {/* 道路 - 横向连接 */}
-      <Road position={[-8, 0.02, 8]} rotation={[0, Math.PI / 2, 0]} width={4} length={20} />
+      {/* ===== 灰渣处理 ===== */}
+      <AshSilo position={[-20, 0, 5]} />
+      <AshSilo position={[-22, 0, 5]} />
 
-      {/* 绿化带 x3 - 左侧、右侧、左后方 */}
-      <GreenArea position={[-20, 0.01, 0]} />
-      <GreenArea position={[20, 0.01, 15]} />
-      <GreenArea position={[-20, 0.01, -10]} />
+      {/* ===== 管道网络 ===== */}
+      {/* 锅炉到除尘器 */}
+      <PipeSegment position={[8, 3, -18]} rotation={[0, 0, Math.PI/2]} length={6} />
+      {/* 除尘器到脱硫塔 */}
+      <PipeSegment position={[14, 3, -13]} rotation={[0, 0, Math.PI/2]} length={5} />
+      {/* 汽机到冷却塔 */}
+      <PipeSegment position={[12, 2, -4]} rotation={[0, 0, Math.PI/2]} length={8} bent />
+      <PipeSegment position={[12, 2, 4]} rotation={[0, 0, Math.PI/2]} length={8} bent />
+
+      {/* ===== 辅助建筑 ===== */}
+      {/* 办公楼 */}
+      <OfficeBuilding position={[0, 0, 22]} rotation={[0, Math.PI, 0]} floors={6} />
+
+      {/* 主控楼 */}
+      <OfficeBuilding position={[-5, 0, 15]} rotation={[0, Math.PI/2, 0]} floors={3} />
+
+      {/* ===== 道路系统 ===== */}
+      {/* 主道路 - 纵向贯穿 */}
+      <Road position={[0, 0.02, 25]} width={6} length={60} />
+      {/* 横向道路 - 连接各区域 */}
+      <Road position={[-10, 0.02, 12]} rotation={[0, Math.PI/2, 0]} width={4} length={30} />
+      <Road position={[10, 0.02, -5]} rotation={[0, Math.PI/2, 0]} width={4} length={40} />
+      {/* 进厂道路 */}
+      <Road position={[0, 0.02, 28]} width={8} length={10} />
+
+      {/* ===== 绿化带 ===== */}
+      <GreenArea position={[-35, 0.01, -20]} />
+      <GreenArea position={[-35, 0.01, 0]} />
+      <GreenArea position={[-35, 0.01, 20]} />
+      <GreenArea position={[30, 0.01, -20]} />
+      <GreenArea position={[30, 0.01, 5]} />
+      <GreenArea position={[30, 0.01, 22]} />
+      <GreenArea position={[-10, 0.01, 25]} />
+      <GreenArea position={[10, 0.01, 25]} />
 
       {/* 视图模式提示标签 */}
       <Html
-        position={[0, 12, 0]}
+        position={[0, 15, 0]}
         center
         style={{
           pointerEvents: 'none',
