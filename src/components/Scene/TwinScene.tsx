@@ -10,6 +10,19 @@ import { getDeviceTemplate } from '../../templates/devices';
 import { getFactoryTemplate } from '../../templates/factories';
 import { DeviceStatus } from '../../types';
 import type { DeviceInstance, GeometryPart } from '../../types';
+import {
+  OfficeBuilding,
+  FactoryHall,
+  Chimney,
+  StorageTank,
+  SphereTank,
+  CoolingTower,
+  PipeSegment,
+  PowerLine,
+  Road,
+  GreenArea,
+} from './FactoryBuildings';
+import FactoryEnvironment from './FactoryEnvironment';
 
 // ==================== 设备3D渲染组件 ====================
 
@@ -178,6 +191,62 @@ function DeviceMesh({ device }: { device: DeviceInstance }) {
 
 // ==================== 工厂地面和墙壁 ====================
 
+/** 火力发电厂精细场景布局 */
+function ThermalPowerPlantScene() {
+  return (
+    <>
+      {/* 精细环境渲染（天空、草地、光照、雾效） */}
+      <FactoryEnvironment floorSize={{ width: 50, depth: 40 }} />
+
+      {/* 办公楼 - 面向场景内部 */}
+      <OfficeBuilding position={[0, 0, 15]} rotation={[0, Math.PI, 0]} />
+
+      {/* 主厂房（汽轮机） - 场景中心 */}
+      <FactoryHall position={[0, 0, 0]} width={20} depth={12} />
+
+      {/* 锅炉房 - 中后方 */}
+      <FactoryHall position={[0, 0, -12]} width={16} depth={10} />
+
+      {/* 烟囱 x2 - 后方 */}
+      <Chimney position={[-4, 0, -18]} />
+      <Chimney position={[4, 0, -18]} />
+
+      {/* 冷却塔 x2 - 右侧 */}
+      <CoolingTower position={[12, 0, -5]} />
+      <CoolingTower position={[12, 0, -12]} />
+
+      {/* 储罐 x2 - 右中 */}
+      <StorageTank position={[16, 0, 5]} />
+      <StorageTank position={[16, 0, 10]} />
+
+      {/* 球形储罐 - 右侧偏后 */}
+      <SphereTank position={[18, 0, -3]} />
+
+      {/* 管道段 - 连接锅炉到汽轮机 */}
+      <PipeSegment position={[-3, 0, -7]} rotation={[Math.PI / 2, 0, 0]} length={5} />
+      <PipeSegment position={[3, 0, -7]} rotation={[Math.PI / 2, 0, 0]} length={5} />
+
+      {/* 管道段 - 连接汽轮机到冷却塔 */}
+      <PipeSegment position={[8, 0, -3]} rotation={[0, 0, Math.PI / 2]} length={6} bent />
+      <PipeSegment position={[8, 0, -9]} rotation={[0, 0, Math.PI / 2]} length={6} bent />
+
+      {/* 输电塔 - 左后方 */}
+      <PowerLine position={[-15, 0, -10]} />
+
+      {/* 道路 - 纵向贯穿场景 */}
+      <Road position={[0, 0.02, 18]} rotation={[0, 0, 0]} width={6} length={40} />
+
+      {/* 道路 - 横向连接 */}
+      <Road position={[-8, 0.02, 8]} rotation={[0, Math.PI / 2, 0]} width={4} length={20} />
+
+      {/* 绿化带 x3 - 左侧、右侧、左后方 */}
+      <GreenArea position={[-20, 0.01, 0]} />
+      <GreenArea position={[20, 0.01, 15]} />
+      <GreenArea position={[-20, 0.01, -10]} />
+    </>
+  );
+}
+
 function FactoryFloor() {
   const factoryTemplateId = useAppStore((s) => s.factoryTemplateId);
 
@@ -186,6 +255,12 @@ function FactoryFloor() {
   const factory = getFactoryTemplate(factoryTemplateId);
   if (!factory) return null;
 
+  // 火力发电厂模板使用精细场景渲染
+  if (factoryTemplateId === 'thermal-power-plant') {
+    return <ThermalPowerPlantScene />;
+  }
+
+  // 其他模板保持原有简单渲染方式
   const { floorSize, floorColor, wallColor, environment } = factory;
 
   return (
