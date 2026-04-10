@@ -363,6 +363,208 @@ function ThermalPowerPlantScene() {
   );
 }
 
+/** 智能制造工厂精细场景布局（30x20） */
+function SmartFactoryScene() {
+  // 检测相机是否在主生产车间附近
+  const isInside = useCameraProximity([0, 0, -2], 12);
+
+  return (
+    <>
+      {/* 精细环境渲染（天空、草地、光照、雾效） */}
+      <FactoryEnvironment floorSize={{ width: 30, depth: 20 }} />
+
+      {/* 办公楼 - 6层，面向场景内部 */}
+      <OfficeBuilding position={[-10, 0, 7]} rotation={[0, Math.PI / 2, 0]} />
+
+      {/* 质检楼 - 4层 */}
+      <OfficeBuilding position={[12, 0, -3]} floors={4} />
+
+      {/* 主生产车间 - 场景中心 - 支持X光透视 */}
+      <XRayFactoryHall position={[0, 0, -2]} width={18} depth={10} isInside={isInside} />
+
+      {/* 主生产车间内部场景 */}
+      <FactoryInterior position={[0, 0, -2]} width={18} depth={10} visible={isInside} />
+
+      {/* 仓库 - 小厂房 */}
+      <FactoryHall position={[-12, 0, -5]} width={8} depth={6} height={5} />
+
+      {/* 小型储罐 */}
+      <StorageTank position={[14, 0, 5]} />
+
+      {/* 管道段 - 连接仓库到主车间 */}
+      <PipeSegment position={[-6, 0, -4]} rotation={[0, 0, Math.PI / 2]} length={6} />
+
+      {/* 管道段 - 连接主车间到质检楼 */}
+      <PipeSegment position={[8, 0, -2]} rotation={[0, 0, Math.PI / 2]} length={6} bent />
+
+      {/* 道路 - 纵向贯穿场景 */}
+      <Road position={[0, 0.02, 8]} width={5} length={30} />
+
+      {/* 道路 - 横向连接 */}
+      <Road position={[-6, 0.02, 2]} rotation={[0, Math.PI / 2, 0]} width={3} length={16} />
+
+      {/* 绿化带 x3 */}
+      <GreenArea position={[-14, 0.01, 5]} />
+      <GreenArea position={[14, 0.01, -8]} />
+      <GreenArea position={[-14, 0.01, -5]} />
+
+      {/* 视图模式提示标签 */}
+      <Html
+        position={[0, 10, 0]}
+        center
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          style={{
+            background: isInside ? 'rgba(66, 153, 225, 0.9)' : 'rgba(0, 0, 0, 0.75)',
+            color: '#fff',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            letterSpacing: '1px',
+            transition: 'background 0.5s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          {isInside ? '[ 内部视图 ] 滚轮拉远返回外部' : '[ 外部视图 ] 滚轮拉近进入厂房'}
+        </div>
+      </Html>
+    </>
+  );
+}
+
+/** 简易生产车间精细场景布局（16x12） */
+function SimpleWorkshopScene() {
+  // 检测相机是否在主车间附近
+  const isInside = useCameraProximity([0, 0, 0], 10);
+
+  return (
+    <>
+      {/* 精细环境渲染（天空、草地、光照、雾效） */}
+      <FactoryEnvironment floorSize={{ width: 16, depth: 12 }} />
+
+      {/* 主车间 - 场景中心 - 支持X光透视 */}
+      <XRayFactoryHall position={[0, 0, 0]} width={12} depth={8} isInside={isInside} />
+
+      {/* 主车间内部场景 */}
+      <FactoryInterior position={[0, 0, 0]} width={12} depth={8} visible={isInside} />
+
+      {/* 小仓库 */}
+      <FactoryHall position={[8, 0, -2]} width={5} depth={4} height={4} />
+
+      {/* 道路 - 纵向贯穿场景 */}
+      <Road position={[0, 0.02, 5]} width={3} length={16} />
+
+      {/* 绿化带 x2 */}
+      <GreenArea position={[-7, 0.01, -4]} />
+      <GreenArea position={[7, 0.01, 4]} />
+
+      {/* 视图模式提示标签 */}
+      <Html
+        position={[0, 8, 0]}
+        center
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          style={{
+            background: isInside ? 'rgba(66, 153, 225, 0.9)' : 'rgba(0, 0, 0, 0.75)',
+            color: '#fff',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            letterSpacing: '1px',
+            transition: 'background 0.5s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          {isInside ? '[ 内部视图 ] 滚轮拉远返回外部' : '[ 外部视图 ] 滚轮拉近进入厂房'}
+        </div>
+      </Html>
+    </>
+  );
+}
+
+/** 能源监控站精细场景布局（14x10） */
+function EnergyStationScene() {
+  // 检测相机是否在空压机房附近
+  const isInside = useCameraProximity([-3, 0, -2], 8);
+
+  return (
+    <>
+      {/* 精细环境渲染（天空、草地、光照、雾效） */}
+      <FactoryEnvironment floorSize={{ width: 14, depth: 10 }} />
+
+      {/* 空压机房 - 支持X光透视 */}
+      <XRayFactoryHall position={[-3, 0, -2]} width={8} depth={6} isInside={isInside} />
+
+      {/* 空压机房内部场景 */}
+      <FactoryInterior position={[-3, 0, -2]} width={8} depth={6} visible={isInside} />
+
+      {/* 冷却设备间 */}
+      <FactoryHall position={[4, 0, -2]} width={6} depth={5} height={4} />
+
+      {/* 小型储罐 */}
+      <StorageTank position={[6, 0, 3]} />
+
+      {/* 球形储气罐 */}
+      <SphereTank position={[-6, 0, 3]} />
+
+      {/* 管道段 - 连接空压机房到冷却设备间 */}
+      <PipeSegment position={[1, 0, -2]} rotation={[0, 0, Math.PI / 2]} length={5} bent />
+
+      {/* 管道段 - 连接空压机房到储气罐 */}
+      <PipeSegment position={[-5, 0, 0]} rotation={[Math.PI / 2, 0, 0]} length={5} />
+
+      {/* 管道段 - 连接冷却设备到储罐 */}
+      <PipeSegment position={[5, 0, 0]} rotation={[Math.PI / 2, 0, 0]} length={5} />
+
+      {/* 道路 - 纵向贯穿场景 */}
+      <Road position={[0, 0.02, 5]} width={3} length={14} />
+
+      {/* 绿化带 x2 */}
+      <GreenArea position={[-7, 0.01, 4]} />
+      <GreenArea position={[7, 0.01, 4]} />
+
+      {/* 视图模式提示标签 */}
+      <Html
+        position={[0, 8, 0]}
+        center
+        style={{
+          pointerEvents: 'none',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          style={{
+            background: isInside ? 'rgba(66, 153, 225, 0.9)' : 'rgba(0, 0, 0, 0.75)',
+            color: '#fff',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            fontSize: '13px',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            letterSpacing: '1px',
+            transition: 'background 0.5s ease',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        >
+          {isInside ? '[ 内部视图 ] 滚轮拉远返回外部' : '[ 外部视图 ] 滚轮拉近进入厂房'}
+        </div>
+      </Html>
+    </>
+  );
+}
+
 function FactoryFloor() {
   const factoryTemplateId = useAppStore((s) => s.factoryTemplateId);
 
@@ -374,6 +576,21 @@ function FactoryFloor() {
   // 火力发电厂模板使用精细场景渲染
   if (factoryTemplateId === 'thermal-power-plant') {
     return <ThermalPowerPlantScene />;
+  }
+
+  // 智能制造工厂模板使用精细场景渲染
+  if (factoryTemplateId === 'smart-factory') {
+    return <SmartFactoryScene />;
+  }
+
+  // 简易生产车间模板使用精细场景渲染
+  if (factoryTemplateId === 'simple-workshop') {
+    return <SimpleWorkshopScene />;
+  }
+
+  // 能源监控站模板使用精细场景渲染
+  if (factoryTemplateId === 'energy-station') {
+    return <EnergyStationScene />;
   }
 
   // 其他模板保持原有简单渲染方式
