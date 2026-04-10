@@ -16,7 +16,6 @@ import {
   Chimney,
   StorageTank,
   SphereTank,
-  CoolingTower,
   PipeSegment,
   PowerLine,
   Road,
@@ -28,6 +27,11 @@ import {
   CoalConveyorBelt,
   WaterTreatment,
   AshSilo,
+  StackerReclaimer,
+  BeltCorridor,
+  TruckScale,
+  CoalTruck,
+  CoolingTowerEnhanced,
 } from './FactoryBuildings';
 import FactoryEnvironment from './FactoryEnvironment';
 import FactoryInterior from './FactoryInterior';
@@ -312,8 +316,8 @@ function ThermalPowerPlantScene() {
       <DesulfurizationTower position={[15, 0, -10]} />
 
       {/* ===== 冷却设施区 ===== */}
-      <CoolingTower position={[18, 0, 0]} />
-      <CoolingTower position={[18, 0, -8]} />
+      <CoolingTowerEnhanced position={[18, 0, 0]} />
+      <CoolingTowerEnhanced position={[18, 0, -8]} />
 
       {/* ===== 燃料设施区 ===== */}
       {/* 煤场 */}
@@ -322,6 +326,22 @@ function ThermalPowerPlantScene() {
       {/* 输煤栈桥 - 煤场到锅炉房 */}
       <CoalConveyorBelt position={[-15, 0, -18]} rotation={[0, 0, 0]} length={12} height={6} />
       <CoalConveyorBelt position={[-8, 0, -15]} rotation={[0, -Math.PI/6, 0]} length={10} height={7} />
+
+      {/* ===== 煤场增强 ===== */}
+      {/* 斗轮堆取料机 - 在煤场内 */}
+      <StackerReclaimer position={[-25, 0, -18]} rotation={[0, Math.PI/4, 0]} />
+
+      {/* 皮带廊桥 - 煤场到主厂房的封闭输煤通道 */}
+      <BeltCorridor position={[-18, 0, -16]} rotation={[0, -Math.PI/6, 0]} length={15} height={7} />
+      <BeltCorridor position={[-8, 0, -12]} rotation={[0, -Math.PI/8, 0]} length={10} height={8} />
+
+      {/* 地磅 - 进厂道路旁 */}
+      <TruckScale position={[-8, 0, 26]} />
+
+      {/* 煤车 - 在地磅上和煤场旁 */}
+      <CoalTruck position={[-8, 0, 26]} />
+      <CoalTruck position={[-30, 0, -14]} rotation={[0, Math.PI/3, 0]} />
+      <CoalTruck position={[-28, 0, -10]} rotation={[0, -Math.PI/6, 0]} />
 
       {/* ===== 配电设施区 ===== */}
       {/* 升压站 */}
@@ -377,6 +397,42 @@ function ThermalPowerPlantScene() {
       <GreenArea position={[30, 0.01, 22]} />
       <GreenArea position={[-10, 0.01, 25]} />
       <GreenArea position={[10, 0.01, 25]} />
+
+      {/* ===== 围墙 - 厂区四周 ===== */}
+      {/* 北围墙 */}
+      <mesh position={[0, 1.5, -30]}>
+        <boxGeometry args={[80, 3, 0.2]} />
+        <meshStandardMaterial color="#808080" transparent opacity={0.3} />
+      </mesh>
+      {/* 南围墙 */}
+      <mesh position={[0, 1.5, 30]}>
+        <boxGeometry args={[80, 3, 0.2]} />
+        <meshStandardMaterial color="#808080" transparent opacity={0.3} />
+      </mesh>
+      {/* 东围墙 */}
+      <mesh position={[40, 1.5, 0]} rotation={[0, Math.PI/2, 0]}>
+        <boxGeometry args={[60, 3, 0.2]} />
+        <meshStandardMaterial color="#808080" transparent opacity={0.3} />
+      </mesh>
+      {/* 西围墙 */}
+      <mesh position={[-40, 1.5, 0]} rotation={[0, Math.PI/2, 0]}>
+        <boxGeometry args={[60, 3, 0.2]} />
+        <meshStandardMaterial color="#808080" transparent opacity={0.3} />
+      </mesh>
+      {/* 大门 - 南围墙中间 */}
+      <mesh position={[0, 3, 30]}>
+        <boxGeometry args={[8, 6, 0.5]} />
+        <meshStandardMaterial color="#4a5568" metalness={0.3} roughness={0.6} />
+      </mesh>
+      {/* 门柱 x2 */}
+      <mesh position={[-5, 3.5, 30]}>
+        <boxGeometry args={[1, 7, 1]} />
+        <meshStandardMaterial color="#718096" />
+      </mesh>
+      <mesh position={[5, 3.5, 30]}>
+        <boxGeometry args={[1, 7, 1]} />
+        <meshStandardMaterial color="#718096" />
+      </mesh>
 
       {/* 视图模式提示标签 */}
       <Html
@@ -735,8 +791,8 @@ function SceneContent() {
         makeDefault
         enableDamping
         dampingFactor={0.1}
-        minDistance={5}
-        maxDistance={80}
+        minDistance={3}
+        maxDistance={120}
         maxPolarAngle={Math.PI / 2.1}
       />
     </>

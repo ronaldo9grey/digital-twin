@@ -2088,4 +2088,482 @@ export function AshSilo({
   );
 }
 
+// ==================== StackerReclaimer 斗轮堆取料机 ====================
+// 煤场中的大型堆取料设备，由轨道、旋转平台、悬臂和斗轮组成
+
+interface StackerReclaimerProps extends BaseProps {
+  armLength?: number;  // 悬臂长度，默认 12
+  height?: number;     // 默认 8
+}
+
+export function StackerReclaimer({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = [1, 1, 1],
+  armLength = 12,
+  height = 8,
+}: StackerReclaimerProps) {
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* 底部轨道 - 两根平行长条 */}
+      <mesh position={[0, 0.15, -1.5]} castShadow receiveShadow>
+        <boxGeometry args={[16, 0.3, 0.5]} />
+        <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.15, 1.5]} castShadow receiveShadow>
+        <boxGeometry args={[16, 0.3, 0.5]} />
+        <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      {/* 中心立柱 */}
+      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.5, 0.6, height, 16]} />
+        <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      {/* 旋转平台 */}
+      <mesh position={[0, height, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[1.5, 1.5, 0.5, 32]} />
+        <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      {/* 悬臂 - 从平台延伸，略微上扬 */}
+      <group position={[armLength / 2, height + 0.5, 0]} rotation={[0, 0, (10 * Math.PI) / 180]}>
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[armLength, 0.4, 0.4]} />
+          <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+        </mesh>
+      </group>
+
+      {/* 斗轮 - 悬臂末端的圆环 */}
+      <mesh
+        position={[armLength * Math.cos((10 * Math.PI) / 180), height + 0.5 + armLength * Math.sin((10 * Math.PI) / 180), 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+        castShadow
+      >
+        <torusGeometry args={[1, 0.2, 12, 24]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      {/* 配重 - 平台后方方块 */}
+      <mesh position={[-2, height + 0.75, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2, 1.5, 1.5]} />
+        <meshStandardMaterial color="#e6b422" metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
+// ==================== BeltCorridor 皮带廊桥（精细版） ====================
+// 比现有 CoalConveyorBelt 更精细的封闭式输煤走廊
+
+interface BeltCorridorProps extends BaseProps {
+  length?: number;   // 默认 20
+  height?: number;   // 默认 6（架空高度）
+  width?: number;    // 默认 3
+}
+
+export function BeltCorridor({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = [1, 1, 1],
+  length = 20,
+  height = 6,
+  width = 3,
+}: BeltCorridorProps) {
+  // 预计算支撑柱位置
+  const pillarCount = Math.floor(length / 6) + 1;
+  const pillars = useMemo(() => {
+    const result: number[] = [];
+    for (let i = 0; i < pillarCount; i++) {
+      result.push(-length / 2 + i * (length / (pillarCount - 1)));
+    }
+    return result;
+  }, [length, pillarCount]);
+
+  // 预计算窗户位置
+  const windows = useMemo(() => {
+    const result: number[] = [];
+    const windowCount = Math.floor(length / 3);
+    for (let i = 0; i < windowCount; i++) {
+      result.push(-length / 2 + 1.5 + i * 3);
+    }
+    return result;
+  }, [length]);
+
+  // 预计算托辊支架位置
+  const rollers = useMemo(() => {
+    const result: number[] = [];
+    const rollerCount = Math.floor(length / 2);
+    for (let i = 0; i < rollerCount; i++) {
+      result.push(-length / 2 + 1 + i * 2);
+    }
+    return result;
+  }, [length]);
+
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* 支撑柱 */}
+      {pillars.map((x, i) => (
+        <group key={`pillar-${i}`}>
+          {/* 主柱 */}
+          <mesh position={[x, height / 2, 0]} castShadow receiveShadow>
+            <cylinderGeometry args={[0.2, 0.2, height, 12]} />
+            <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.6} />
+          </mesh>
+          {/* 交叉支撑 */}
+          {i < pillars.length - 1 && (
+            <>
+              <mesh
+                position={[(x + pillars[i + 1]) / 2, height / 2, 0]}
+                rotation={[0, 0, Math.atan2(height, pillars[i + 1] - x)]}
+                castShadow
+              >
+                <cylinderGeometry args={[0.05, 0.05, Math.sqrt(height * height + (pillars[i + 1] - x) ** 2), 8]} />
+                <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.6} />
+              </mesh>
+              <mesh
+                position={[(x + pillars[i + 1]) / 2, height / 2, 0]}
+                rotation={[0, 0, -Math.atan2(height, pillars[i + 1] - x)]}
+                castShadow
+              >
+                <cylinderGeometry args={[0.05, 0.05, Math.sqrt(height * height + (pillars[i + 1] - x) ** 2), 8]} />
+                <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.6} />
+              </mesh>
+            </>
+          )}
+        </group>
+      ))}
+
+      {/* 走廊主体 - 封闭长方体 */}
+      <mesh position={[0, height, 0]} castShadow receiveShadow>
+        <boxGeometry args={[length, width, 1.5]} />
+        <meshStandardMaterial color="#d0d0d0" metalness={0.3} roughness={0.6} />
+      </mesh>
+
+      {/* 走廊顶部 - 稍宽的屋顶 */}
+      <mesh position={[0, height + width / 2 + 0.1, 0]} castShadow receiveShadow>
+        <boxGeometry args={[length + 0.5, width + 0.3, 0.2]} />
+        <meshStandardMaterial color="#808080" metalness={0.3} roughness={0.6} />
+      </mesh>
+
+      {/* 侧面窗户 - 每隔3米一个蓝色小方块 */}
+      {windows.map((x, i) => (
+        <group key={`window-${i}`}>
+          {/* 左侧窗户 */}
+          <mesh position={[x, height, width / 2 + 0.01]} castShadow>
+            <boxGeometry args={[0.8, 0.6, 0.05]} />
+            <meshStandardMaterial color="#4a90d9" metalness={0.3} roughness={0.6} transparent opacity={0.7} />
+          </mesh>
+          {/* 右侧窗户 */}
+          <mesh position={[x, height, -width / 2 - 0.01]} castShadow>
+            <boxGeometry args={[0.8, 0.6, 0.05]} />
+            <meshStandardMaterial color="#4a90d9" metalness={0.3} roughness={0.6} transparent opacity={0.7} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* 底部托辊支架 - V形支撑 */}
+      {rollers.map((x, i) => (
+        <group key={`roller-${i}`}>
+          {/* 左侧倾斜支撑 */}
+          <mesh position={[x, height - width / 2 - 0.2, 0.3]} rotation={[0, 0, (30 * Math.PI) / 180]} castShadow>
+            <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+            <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.6} />
+          </mesh>
+          {/* 右侧倾斜支撑 */}
+          <mesh position={[x, height - width / 2 - 0.2, -0.3]} rotation={[0, 0, -(30 * Math.PI) / 180]} castShadow>
+            <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+            <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.6} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* 皮带 - 走廊底部黑色长条 */}
+      <mesh position={[0, height - width / 2 - 0.05, 0]} castShadow>
+        <boxGeometry args={[length, 0.1, 0.8]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
+// ==================== TruckScale 地磅 ====================
+// 运煤车辆称重设施
+
+interface TruckScaleProps extends BaseProps {
+  length?: number;  // 默认 12
+  width?: number;   // 默认 4
+}
+
+export function TruckScale({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = [1, 1, 1],
+  length = 12,
+  width = 4,
+}: TruckScaleProps) {
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* 地磅平台 */}
+      <mesh position={[0, 0.15, 0]} castShadow receiveShadow>
+        <boxGeometry args={[length, 0.3, width]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* 前端引坡 */}
+      <mesh position={[length / 2 + 0.8, 0.1, 0]} rotation={[0, 0, -(10 * Math.PI) / 180]} castShadow receiveShadow>
+        <boxGeometry args={[2, 0.15, width]} />
+        <meshStandardMaterial color="#909090" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* 后端引坡 */}
+      <mesh position={[-(length / 2 + 0.8), 0.1, 0]} rotation={[0, 0, (10 * Math.PI) / 180]} castShadow receiveShadow>
+        <boxGeometry args={[2, 0.15, width]} />
+        <meshStandardMaterial color="#909090" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* 仪表房 */}
+      <mesh position={[length / 2 + 2.5, 1.25, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2, 2.5, 2]} />
+        <meshStandardMaterial color="#7eb8da" metalness={0.3} roughness={0.7} />
+      </mesh>
+      {/* 仪表房屋顶 */}
+      <mesh position={[length / 2 + 2.5, 2.6, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.4, 0.2, 2.4]} />
+        <meshStandardMaterial color="#5a9ab5" metalness={0.3} roughness={0.7} />
+      </mesh>
+
+      {/* 地面标记 - 白色线条 */}
+      <mesh position={[0, 0.31, 0]} castShadow>
+        <boxGeometry args={[length - 1, 0.02, 0.15]} />
+        <meshStandardMaterial color="#ffffff" metalness={0.1} roughness={0.8} />
+      </mesh>
+      {/* 前端停止线 */}
+      <mesh position={[length / 2 - 0.5, 0.31, 0]} castShadow>
+        <boxGeometry args={[0.15, 0.02, width - 0.5]} />
+        <meshStandardMaterial color="#ffffff" metalness={0.1} roughness={0.8} />
+      </mesh>
+      {/* 后端停止线 */}
+      <mesh position={[-(length / 2 - 0.5), 0.31, 0]} castShadow>
+        <boxGeometry args={[0.15, 0.02, width - 0.5]} />
+        <meshStandardMaterial color="#ffffff" metalness={0.1} roughness={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
+// ==================== CoalTruck 煤车 ====================
+// 运煤重型卡车
+
+interface CoalTruckProps extends BaseProps {}
+
+export function CoalTruck({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = [1, 1, 1],
+}: CoalTruckProps) {
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* 底盘 */}
+      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[6, 1, 2.5]} />
+        <meshStandardMaterial color="#4a4a4a" metalness={0.3} roughness={0.6} />
+      </mesh>
+
+      {/* 驾驶室 */}
+      <mesh position={[2.75, 1.75, 0]} castShadow receiveShadow>
+        <boxGeometry args={[1.5, 1.5, 2.5]} />
+        <meshStandardMaterial color="#2563eb" metalness={0.3} roughness={0.6} />
+      </mesh>
+      {/* 驾驶室挡风玻璃 */}
+      <mesh position={[3.51, 1.8, 0]} castShadow>
+        <boxGeometry args={[0.05, 1, 2]} />
+        <meshStandardMaterial color="#87ceeb" metalness={0.3} roughness={0.3} transparent opacity={0.6} />
+      </mesh>
+
+      {/* 车斗 */}
+      <mesh position={[-1, 1.5, 0]} castShadow receiveShadow>
+        <boxGeometry args={[4, 2, 2.5]} />
+        <meshStandardMaterial color="#4a4a4a" metalness={0.3} roughness={0.6} />
+      </mesh>
+      {/* 车斗内部（挖空效果 - 深色内壁） */}
+      <mesh position={[-1, 1.5, 0]} castShadow>
+        <boxGeometry args={[3.7, 1.7, 2.2]} />
+        <meshStandardMaterial color="#2a2a2a" metalness={0.2} roughness={0.8} />
+      </mesh>
+
+      {/* 煤堆 - 车斗内的黑色半球 */}
+      <mesh position={[-1, 2.3, 0]} castShadow>
+        <sphereGeometry args={[1.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.1} roughness={0.9} />
+      </mesh>
+
+      {/* 车轮 - 前轮 x2 */}
+      <mesh position={[2.2, 0.3, 1.4]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.5, 0.5, 0.3, 16]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.6} />
+      </mesh>
+      <mesh position={[2.2, 0.3, -1.4]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.5, 0.5, 0.3, 16]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.6} />
+      </mesh>
+      {/* 车轮 - 后轮 x2 */}
+      <mesh position={[-2.2, 0.3, 1.4]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.5, 0.5, 0.3, 16]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.6} />
+      </mesh>
+      <mesh position={[-2.2, 0.3, -1.4]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.5, 0.5, 0.3, 16]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
+// ==================== CoolingTowerEnhanced 增强版冷却塔 ====================
+// 在现有 CoolingTower 基础上增加细节：配水槽、蒸汽效果、加强筋、进风口标记
+
+interface CoolingTowerEnhancedProps extends BaseProps {
+  height?: number;  // 默认 14
+}
+
+export function CoolingTowerEnhanced({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = [1, 1, 1],
+  height = 14,
+}: CoolingTowerEnhancedProps) {
+  // 双曲线轮廓点（用于LatheGeometry，更精细）
+  const latheGeometry = useMemo(() => {
+    const points: THREE.Vector2[] = [];
+    const segments = 50;
+    const topRadius = 3.8;
+    const bottomRadius = 4.2;
+    const neckRadius = 2.6;
+    const neckPosition = 0.7;
+
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      let r: number;
+
+      if (t < neckPosition) {
+        const localT = t / neckPosition;
+        r = bottomRadius + (neckRadius - bottomRadius) * Math.pow(localT, 0.8);
+      } else {
+        const localT = (t - neckPosition) / (1 - neckPosition);
+        r = neckRadius + (topRadius - neckRadius) * Math.pow(localT, 0.6);
+      }
+
+      points.push(new THREE.Vector2(r, t * height));
+    }
+
+    return new THREE.LatheGeometry(points, 48);
+  }, [height]);
+
+  // 环形加强筋位置（每3米一个）
+  const ringPositions = useMemo(() => {
+    const result: number[] = [];
+    for (let y = 3; y < height; y += 3) {
+      result.push(y);
+    }
+    return result;
+  }, [height]);
+
+  // 计算指定高度处的塔体半径
+  const getRadiusAtHeight = (y: number): number => {
+    const t = y / height;
+    const topRadius = 3.8;
+    const bottomRadius = 4.2;
+    const neckRadius = 2.6;
+    const neckPosition = 0.7;
+
+    if (t < neckPosition) {
+      const localT = t / neckPosition;
+      return bottomRadius + (neckRadius - bottomRadius) * Math.pow(localT, 0.8);
+    } else {
+      const localT = (t - neckPosition) / (1 - neckPosition);
+      return neckRadius + (topRadius - neckRadius) * Math.pow(localT, 0.6);
+    }
+  };
+
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* 双曲线塔体 */}
+      <mesh geometry={latheGeometry} castShadow receiveShadow>
+        <meshStandardMaterial color="#c0c0c0" metalness={0.1} roughness={0.9} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* 顶部加粗环 */}
+      <mesh position={[0, height, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[3.8, 0.18, 8, 48]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.2} roughness={0.7} />
+      </mesh>
+
+      {/* 底部基座 */}
+      <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[4.5, 4.7, 0.6, 48]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.2} roughness={0.7} />
+      </mesh>
+
+      {/* 底部配水槽 - 环形水槽 */}
+      <mesh position={[0, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[4.7, 0.3, 8, 48]} />
+        <meshStandardMaterial color="#909090" metalness={0.2} roughness={0.7} />
+      </mesh>
+
+      {/* 环形加强筋 - 每3米一个 */}
+      {ringPositions.map((y, i) => {
+        const r = getRadiusAtHeight(y);
+        return (
+          <mesh key={`ring-${i}`} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <torusGeometry args={[r + 0.05, 0.08, 8, 48]} />
+            <meshStandardMaterial color="#b0b0b0" metalness={0.15} roughness={0.8} />
+          </mesh>
+        );
+      })}
+
+      {/* 底部进风口标记 - 深色弧形 */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        const x = Math.cos(angle) * 4.3;
+        const z = Math.sin(angle) * 4.3;
+        return (
+          <mesh key={`vent-${i}`} position={[x, 0.8, z]} rotation={[0, -angle, 0]} castShadow>
+            <boxGeometry args={[1.5, 1.2, 0.15]} />
+            <meshStandardMaterial color="#505050" metalness={0.2} roughness={0.8} />
+          </mesh>
+        );
+      })}
+
+      {/* 顶部蒸汽效果 - 多个半透明扁平圆柱叠加 */}
+      {[0.5, 1.2, 2.0, 2.8].map((offset, i) => (
+        <mesh key={`steam-${i}`} position={[0, height + offset, 0]} castShadow>
+          <cylinderGeometry args={[3.2 + i * 0.4, 2.8 + i * 0.3, 0.4, 32]} />
+          <meshStandardMaterial
+            color="#ffffff"
+            metalness={0}
+            roughness={1}
+            transparent
+            opacity={0.15 - i * 0.02}
+          />
+        </mesh>
+      ))}
+
+      {/* 表面竖向纹理线条（装饰） */}
+      {Array.from({ length: 16 }).map((_, i) => {
+        const angle = (i / 16) * Math.PI * 2;
+        const x = Math.cos(angle) * 4.3;
+        const z = Math.sin(angle) * 4.3;
+        return (
+          <mesh key={`line-${i}`} position={[x, height / 2, z]} castShadow>
+            <boxGeometry args={[0.06, height, 0.06]} />
+            <meshStandardMaterial color="#b0b0b0" metalness={0.15} roughness={0.75} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 
